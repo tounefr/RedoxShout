@@ -3,9 +3,12 @@ RedoxShout
 
 RedoxShout permet de voir l'historique de la shoutbox du bot RedoxBot
 
-Liens
+Forum
 =====
 
-Liens topic du forum : http://forum.redoxbot.net/index.php?/topic/20253-redoxshout-lhistorique-de-la-shoutbox/
+http://forum.redoxbot.net/index.php?/topic/20253-redoxshout-lhistorique-de-la-shoutbox/
 
-Site : http://redoxtools.no-ip.org/redoxshout/
+Site officiel
+=============
+
+http://redoxtools.no-ip.org/redoxshout/
