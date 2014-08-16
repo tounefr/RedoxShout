@@ -1,7 +1,7 @@
 RedoxShout
 ==========
 
-RedoxShout permet de voir l'historique de la shoutbox du bot RedoxBot
+RedoxShout permet de voir l'historique de la shoutbox du forum RedoxBot
 
 Forum
 =====
