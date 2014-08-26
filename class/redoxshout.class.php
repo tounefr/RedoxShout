@@ -1,6 +1,6 @@
 <?php
-require_once('/home/redox/redoxshout/class/redoxRequest.class.php');
-require_once('/home/redox/redoxshout/class/database.class.php');
+require_once('./class/redoxRequest.class.php');
+require_once('./class/database.class.php');
 
 class RedoxShout {
 	private $request;
