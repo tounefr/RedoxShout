@@ -1,6 +1,6 @@
 <?php
-require_once('/home/redox/redoxshout/config.php');
-require_once('/home/redox/redoxshout/class/redoxshout.class.php');
+require_once('./config.php');
+require_once('./class/redoxshout.class.php');
 
 class Database {
 	
