@@ -1,5 +1,5 @@
 <?php
-require_once('/home/redox/redoxshout/class/request.class.php');
+require_once('./class/request.class.php');
 
 class RedoxRequest extends Request {
 	
@@ -18,7 +18,7 @@ class RedoxRequest extends Request {
 	
 	public function getTokenConnection() {
 		if(!empty($tokenConnection)) {
-			throw new Exception("Vous êtes déjà connecté !");
+			throw new Exception("Vous Ãªtes dÃ©jÃ  connectÃ© !");
 		}
 		
 		$this->url = "http://forum.redoxbot.net/index.php?app=core&module=global&section=login";
