@@ -24,20 +24,40 @@ class Database {
 		));
 	}
 	
-	public function getMessages($offset = 0, $dateFormatedStart = 0, $dateFormatedEnd = 0) {
-		if(empty($offset))
-			$offset = "";
-		else	
-			$offset = " LIMIT 0,$offset";
+	public function getMessages($limit = 0, $dateFormatedStart = 0, $dateFormatedEnd = 0, $author = "") {
+	
+		$sql = "SELECT * FROM shoutbox";
 		
-		if($dateFormatedStart == 0 && $dateFormatedEnd == 0) {
-			$req = $this->pdo->query('SELECT * FROM shoutbox ORDER BY date DESC'. $offset);
+		if(!empty($author) && !empty($dateFormatedStart) && !empty($dateFormatedEnd)) {
+			$sql.= " WHERE author = :author AND date BETWEEN :date_start AND :date_end";
+			
 		} else {
-			$req = $this->pdo->prepare('SELECT * FROM shoutbox WHERE date BETWEEN :date_start AND :date_end ORDER BY date DESC'. $offset);
-			$req->bindValue(':date_start', $dateFormatedStart, PDO::PARAM_STR);
-			$req->bindValue(':date_end', $dateFormatedEnd, PDO::PARAM_STR);
-			$req->execute();
+			if(!empty($author) && empty($dateFormatedStart) && empty($dateFormatedEnd)) {
+				$sql.= " WHERE author = :author";
+			}
+			else if(empty($author) && !empty($dateFormatedStart) && !empty($dateFormatedEnd)) {
+				$sql.= " WHERE date BETWEEN :date_start AND :date_end";
+			}
 		}
+		
+		$sql.= " ORDER BY id DESC";
+		
+		if(!empty($limit))
+			$sql.= " LIMIT 0,:limit";
+		
+		$req = $this->pdo->prepare($sql);
+		
+		if(!empty($author))
+			$req->bindValue(':author', $author);
+		if(!empty($dateFormatedStart))
+			$req->bindValue(':date_start', $dateFormatedStart);
+		if(!empty($dateFormatedEnd))
+			$req->bindValue(':date_end', $dateFormatedEnd);
+		if(!empty($limit))
+			$req->bindValue(':limit', $limit, PDO::PARAM_INT);
+		
+		
+		$req->execute();
 		return $req->fetchAll(PDO::FETCH_ASSOC);
 	}
 	
