@@ -1,4 +1,7 @@
 <?php
+if(!defined('ROOT'))
+	exit("Coucou toi !");
+	
 require_once('./class/request.class.php');
 
 class RedoxRequest extends Request {
@@ -18,7 +21,7 @@ class RedoxRequest extends Request {
 	
 	public function getTokenConnection() {
 		if(!empty($tokenConnection)) {
-			throw new Exception("Vous Ãªtes dÃ©jÃ  connectÃ© !");
+			throw new Exception("Vous êtes déjà connecté !");
 		}
 		
 		$this->url = "http://forum.redoxbot.net/index.php?app=core&module=global&section=login";
@@ -58,6 +61,7 @@ class RedoxRequest extends Request {
 			"ips_username" => $this->login,
 			"ips_password" => $this->pass,
 			"rememberMe" => 1
+			//"anonymous" => 1
 		);		
 		$html = $this->post($postfields);
 		return $html;

@@ -1,4 +1,7 @@
 <?php
+if(!defined('ROOT'))
+	exit("Coucou toi !");
+	
 require_once('./class/redoxRequest.class.php');
 require_once('./class/database.class.php');
 
@@ -6,6 +9,9 @@ class RedoxShout {
 	private $request;
 	private $database;
 	private $url;
+	
+	public static $pattern_date = "#([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{4})#";
+	public static $days = array("Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Novembre", "Octobre", "Novembre", "Décembre");
 	
 	public function __construct($login, $pass)	{
 		$this->database = new Database();
@@ -45,6 +51,7 @@ class RedoxShout {
 				}
 			}
 		}
+		
 		// Parsing dates
 		for($i3 = 0; $i3 < $spans->length; $i3++) {
 			$span = $spans->item($i3);
@@ -71,9 +78,23 @@ class RedoxShout {
 			$messagesParsed[$i]["author"] = $authors[$i];
 			
 			$date = self::getDate($dates[$i]);
-			$messagesParsed[$i]["date"] = self::formatDate($date['h'], $date['m']);
+			$messagesParsed[$i]["date"] = self::formatDate($date['h'], $date['m']); 
 			$messagesParsed[$i]["message"] = $messages[$i];
 		}
+		
+		
+		echo "author = " . $authors[0] . " message = " . $messages[0] . " date = " . $dates[0] . " hash = ". md5($authors[0].$messages[0].$dates[0]) ." <br />";
+
+		/*
+		echo "<pre>";
+		print_r($authors);
+		print_r($dates);
+		print_r($messages);
+		print_r($messagesParsed);
+		//print_r($DOMDocument->saveHTML());
+		echo "</pre>";
+		
+		*/
 
 		return $messagesParsed;
 	}
@@ -91,8 +112,46 @@ class RedoxShout {
 			$month = date('m', time());
 			$year = date('Y', time());
 		}
-		$seconds = date('s', time());
-		return "$year/$month/$day $hour:$minute:$seconds";
+		$seconds = 12;
+		return "$year-$month-$day $hour:$minute:$seconds";
+	}
+	
+	public static function formatDateForDatabase($dateUnformated)
+	{
+		if(is_array($dateUnformated)) {
+			$day = isset($dateUnformated['day']) ? (int) $dateUnformated['day'] : 00;
+			$month = isset($dateUnformated['month']) ? (int) $dateUnformated['month'] : 00;
+			$year = isset($dateUnformated['year']) ? (int) $dateUnformated['year'] : 0000;
+			$hours = isset($dateUnformated['hours']) ? (int) $dateUnformated['hours'] : 00;
+			$minutes = isset($dateUnformated['minutes']) ? (int) $dateUnformated['minutes'] : 00;
+			$seconds = date('s', time());
+			
+		} else {
+			if(!preg_match("#([0-9]{2})\-([0-9]{2})\-([0-9]{4})\-([0-9]{2})\-([0-9]{2})#", $dateUnformated, $matches))
+				return null;
+			
+				
+			$day = $matches[1];
+			$month = $matches[2];
+			$year = $matches[3];
+			$hours = $matches[4];
+			$minutes = $matches[5];
+			$seconds = date('s', time());
+		}
+		
+		return "$year/$month/$day $hours:$minutes:$seconds";
+	}
+	
+	public function aboutAuthor($name) {
+		if(!is_string($name)) {
+			return;
+		}
+		
+		return $this->database->aboutAuthor($name);
+	}
+	
+	public function nbrPosts() {
+		return $this->database->nbrPosts();
 	}
 	
 	public function refresh() {
@@ -107,10 +166,70 @@ class RedoxShout {
 		}
 	}
 	
-	public function getMessages($offset = 0, $dateFormatedStart = 0, $dateFormatedEnd = 0) {
-		return $this->database->getMessages($offset, $dateFormatedStart, $dateFormatedEnd);
+	public function getMessages($page = 1, $date_start = 0, $date_end = 0, $author = "") {
+		if(!empty($date_start)) {
+			$date_start = self::formatDateForDatabase($date_start);
+			if(empty($date_start))
+				throw new Exception("Le format de la date de début est incorrect !"); 
+		}
+		
+		if(!empty($date_end)) {
+			$date_end = self::formatDateForDatabase($date_end);
+			if(empty($date_end))
+				throw new Exception("Le format de la date de fin est incorrect !");
+		}
+
+		if((int) $page <= 0) {
+			$page = 1;
+		} else {
+			$page--;
+		}
+		
+		$offset = $page * 30;
+
+		if(!is_string($author))
+			$author = "";
+		
+		$messages = $this->database->getMessages($offset, $date_start, $date_end, $author);
+		if(empty($messages))
+			throw new Exception("Aucun messages !");
+		else
+			return $messages;
 	}
 	
+	public function getMessageById($id) {
+		$id = (int) $id;
+		return $this->database->getMessageById($id);
+	}
+	
+	public function getTopFiftyCurrentMonth() {
+		$dateStart = self::formatDateForDatabase(array(
+			'year' => date('Y', time()),
+			'month' => date('m', time()) - 1,
+			'day' => 01 
+		));
+		$dateEnd = self::formatDateForDatabase(array(
+			'year' => date('Y', time()),
+			'month' => date('m', time()),
+			'day' => 01
+		));
+		
+		return $this->database->getTop($dateStart, $dateEnd);
+	}
+	
+	public function getTopAnytime() {
+		$dateStart = self::formatDateForDatabase(array());
+		$dateEnd = self::formatDateForDatabase(array(
+			'year' => date('Y', time()),
+			'month' => date('m', time()),
+			'day' => date('d', time()),
+			'hours' => date('h', time()),
+			'minutes' => date('i', time())
+		));
+		
+		return $this->database->getTop($dateStart, $dateEnd);
+	}
+
 	public function saveDb($messagesParsed) {
 			
 		$lastMessages = $this->database->getLastMessages(30);		
@@ -122,9 +241,19 @@ class RedoxShout {
 				
 				if(!$this->database->exist($messageParsed)) {
 					$this->database->addMessage($messageParsed);
+					echo "<p>Ajouté :</p>";
+					echo "<pre>";
+					print_r($messageParsed);
+					echo "</pre>";
+				} else {
+					echo "<p>Déjà ajouté !</p>";
+					echo "<pre>";
+					print_r($messageParsed);
+					echo "</pre>";
 				}
 			} else {
 				$this->database->addMessage($messageParsed);
+				echo "<p>Vide et Ajouté !</p>";
 			}
 		}
 	}

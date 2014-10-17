@@ -1,5 +1,8 @@
 <?php
-require_once('./config.php');
+if(!defined('ROOT'))
+	exit("Coucou toi !");
+
+require_once('./includes/config.php');
 require_once('./class/redoxshout.class.php');
 
 class Database {
@@ -14,17 +17,15 @@ class Database {
 	
 	public function addMessage(array $message) {
 		
-		$req = $this->pdo->prepare('INSERT INTO shoutbox(author, date, message, author_sha1, message_sha1) VALUES(:author, :date, :message, :author_sha1, :message_sha1)');
+		$req = $this->pdo->prepare('INSERT INTO shoutbox(author, date, message, checksum) VALUES(:author, :date, :message, MD5(CONCAT(author,date,message)))');
 		$req->execute(array(
 			'author' => $message['author'],
 			'date' => $message['date'],
-			'message' => $message['message'],
-			'author_sha1' => sha1($message['author']),
-			'message_sha1' => sha1($message['message'])
+			'message' => $message['message']
 		));
 	}
 	
-	public function getMessages($limit = 0, $dateFormatedStart = 0, $dateFormatedEnd = 0, $author = "") {
+	public function getMessages($offset = 0, $dateFormatedStart = 0, $dateFormatedEnd = 0, $author = "") {
 	
 		$sql = "SELECT * FROM shoutbox";
 		
@@ -41,9 +42,7 @@ class Database {
 		}
 		
 		$sql.= " ORDER BY id DESC";
-		
-		if(!empty($limit))
-			$sql.= " LIMIT 0,:limit";
+		$sql.= " LIMIT $offset,30";
 		
 		$req = $this->pdo->prepare($sql);
 		
@@ -53,10 +52,15 @@ class Database {
 			$req->bindValue(':date_start', $dateFormatedStart);
 		if(!empty($dateFormatedEnd))
 			$req->bindValue(':date_end', $dateFormatedEnd);
-		if(!empty($limit))
-			$req->bindValue(':limit', $limit, PDO::PARAM_INT);
 		
-		
+		$req->execute();
+		return $req->fetchAll(PDO::FETCH_ASSOC);
+	}
+	
+	public function getMessageById($id) {
+		$id = (int) $id;
+		$req = $this->pdo->prepare('SELECT * FROM shoutbox WHERE id = :id');
+		$req->bindValue(':id', $id, PDO::PARAM_INT);
 		$req->execute();
 		return $req->fetchAll(PDO::FETCH_ASSOC);
 	}
@@ -75,15 +79,36 @@ class Database {
 	}
 	
 	public function exist(array $message) {
-		$req = $this->pdo->prepare('SELECT * FROM shoutbox WHERE author_sha1 = :author_sha1 AND message_sha1 = :message_sha1');
-		$req->bindValue(':author_sha1', sha1($message['author']));
-		$req->bindValue(':message_sha1', sha1($message['message']));
+		$req = $this->pdo->prepare('SELECT * FROM shoutbox WHERE checksum = MD5(CONCAT(:author,:date,:message))');
+		$req->bindValue(':author', $message['author']);
+		$req->bindValue(':date', $message['date']);
+		$req->bindValue(':message', $message['message']);
 		$req->execute();
 		$data = $req->fetch(PDO::FETCH_ASSOC);
-		
+		echo $data['checksum'];
 		if($req->rowCount() > 0)
 			return true;
 		else
 			return false;		
+	}
+	
+	public function getTop($dateStart, $dateEnd) {
+		$req = $this->pdo->prepare('SELECT *, COUNT(*) AS count FROM shoutbox WHERE date BETWEEN :date_start AND :date_end GROUP BY author ORDER BY COUNT DESC LIMIT 0,50');
+		$req->bindValue(':date_start', $dateStart);
+		$req->bindValue(':date_end', $dateEnd);
+		$req->execute();
+		return $req->fetchAll(PDO::FETCH_ASSOC);
+	}
+	
+	public function nbrPosts() {
+		$req = $this->pdo->query('SELECT COUNT(*) AS count FROM shoutbox');
+		return $req->fetch(PDO::FETCH_ASSOC)["count"];
+	}
+	
+	public function aboutAuthor($name) {
+		$req = $this->pdo->prepare('SELECT *, COUNT(*) as nbr_posts FROM shoutbox WHERE author = :author');
+		$req->bindValue(':author', $name);
+		$req->execute();
+		return $req->fetch(PDO::FETCH_ASSOC);
 	}
 }

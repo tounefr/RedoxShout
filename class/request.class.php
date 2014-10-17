@@ -1,4 +1,7 @@
 <?php
+if(!defined('ROOT'))
+	exit("Coucou toi !");
+	
 abstract class Request {
 
 	protected $curl;
@@ -54,8 +57,8 @@ abstract class Request {
 		$this->curl_options[CURLOPT_USERAGENT] = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36";
 		$this->curl_options[CURLOPT_FOLLOWLOCATION] = true;
 		//$this->curl_options[CURLOPT_COOKIESESSION] = true;
-		$this->curl_options[CURLOPT_COOKIEJAR] = "/var/www/r/cookies.txt";
-		$this->curl_options[CURLOPT_COOKIEFILE] = "/var/www/r/cookies.txt";
+		$this->curl_options[CURLOPT_COOKIEJAR] = ROOT . "/cron/cookies.txt";
+		$this->curl_options[CURLOPT_COOKIEFILE] = ROOT . "/cron/cookies.txt";
 		//$this->curl_options[CURLOPT_HTTPHEADER] = $this->formatHeaders($this->headers);
 		curl_setopt_array($this->curl, $this->curl_options);
 	}
